@@ -143,14 +143,14 @@ export default function Catalog({
         max={filters.max}
         onChange={update}
       />
-      <div className="check-label">
+      <label className="check-label">
         <Checkbox
           aria-label="Только букеты в наличии"
           checked={filters.available}
           onCheckedChange={(available) => update({ available: !!available })}
         />
         Только букеты в наличии
-      </div>
+      </label>
       {active && (
         <Button variant="ghost" onClick={() => update(defaults)}>
           Сбросить фильтры <X size={14} />
@@ -398,7 +398,7 @@ export default function Catalog({
                             ? 'Нет в наличии'
                             : (bag[p.id] || 0) >= 20
                               ? 'В корзине 20 шт.'
-                              : 'Добавить в корзину'}
+                              : 'В корзину'}
                         </Button>
                       </article>
                     ))}
@@ -470,7 +470,7 @@ export default function Catalog({
           </SheetHeader>
           {filterControls}
           <Button onClick={() => setMobile(false)}>
-            Показать букеты: {catalog.data?.total || 0}
+            {catalog.loading || catalog.error ? 'Показать букеты' : `Показать букеты: ${catalog.data?.total ?? 0}`}
           </Button>
         </SheetContent>
       </Sheet>

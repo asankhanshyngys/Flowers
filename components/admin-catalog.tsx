@@ -342,7 +342,7 @@ export default function AdminCatalog() {
               }
             />
           </label>
-          <div className="check-label">
+          <label className="check-label">
             <Checkbox
               aria-label="Доступен для подбора"
               checked={!!editing.available}
@@ -351,7 +351,7 @@ export default function AdminCatalog() {
               }
             />
             Доступен для подбора
-          </div>
+          </label>
           <div className="admin-actions">
             <Button type="submit" disabled={locked}>
               {busy ? 'Сохраняем…' : 'Сохранить товар'}
@@ -426,7 +426,7 @@ export default function AdminCatalog() {
               }
             />
           </label>
-          <div className="check-label">
+          <label className="check-label">
             <Checkbox
               aria-label="Категория активна"
               checked={!!category.active}
@@ -435,7 +435,7 @@ export default function AdminCatalog() {
               }
             />
             Категория активна
-          </div>
+          </label>
           <div className="admin-actions">
             <Button type="submit" disabled={locked}>
               Сохранить категорию

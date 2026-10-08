@@ -80,7 +80,7 @@ export default function SelectionSheet({
                         <Button variant="outline" disabled={pending} aria-label={`Уменьшить количество: ${p?.name || id}`} onClick={() => quantity(id, -1)}><Minus /></Button>
                         <span>{qty}</span>
                         <Button variant="outline" disabled={pending || qty >= 20} aria-label={`Увеличить количество: ${p?.name || id}`} onClick={() => quantity(id, 1)}><Plus /></Button>
-                        <Button variant="ghost" disabled={pending} aria-label={`Удалить: ${p?.name || id}`} onClick={() => remove(id)}>Удалить</Button>
+                        <Button className="cart-remove" variant="ghost" disabled={pending} aria-label={`Удалить: ${p?.name || id}`} onClick={() => remove(id)}>Удалить</Button>
                       </div>
                     </div>
                   </div>
