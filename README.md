@@ -1,31 +1,41 @@
 # Flowers / Petal & Stem
 
-Flower catalog with product pages, a cart and WhatsApp checkout, plus an authenticated admin catalog.
+Russian flower catalog with product pages, a cart, WhatsApp checkout and a password-protected admin catalog. Built with Next.js and Turso/libSQL. Prices are in KZT.
 
-## Development
+## Local development
+
 Requires Node.js 22.13 or later.
 
-```sh
-npm ci
-npm run db:migrate:local
-npm run db:seed:local
-npm run dev
-```
+1. Run `npm ci`.
+2. Copy `.env.example` to `.env.local`. Set your admin email and keep the local SQLite URL.
+3. Run `npm run db:migrate:local`, then `npm run dev`.
+4. Run `node scripts/admin-invite.mjs http://localhost:3000`, set the generated hash in `.env.local`, restart the server and privately open the generated activation link.
 
-Create an ignored `.dev.vars` from `.env.example`, using your admin email and the local site origin. Admin activation requires a private activation token; see BACKEND.md. Never commit secrets or real customer data.
+Migrations include demo bouquets. Never commit environment files, database files or private activation links.
+
+## Deploy to Vercel
+
+1. Import this GitHub repository into Vercel as a Next.js project. `vercel.json` supplies the build command.
+2. Connect a Turso database to the **production** environment. It supplies `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+3. Add production variables `ADMIN_EMAILS` (your admin email) and `SITE_ORIGIN` (the exact HTTPS site address, without a trailing slash).
+4. Run `node scripts/admin-invite.mjs https://YOUR-SITE.vercel.app`. Add its hash as `ADMIN_SETUP_TOKEN_HASH` in Vercel. Keep the activation link private.
+5. Deploy. Migrations run before the Next.js build. Open the private link to create your admin password.
+6. For automatic password-reset emails, add `RESEND_API_KEY` and a verified sender in `ADMIN_EMAIL_FROM`, redeploy and verify inbox delivery. See [recovery instructions](docs/admin-recovery.md).
+
+Once Vercel has GitHub repository access, pushes to the production branch trigger deployments. You can also redeploy through the Vercel dashboard. Environment changes require a new deployment.
+
+Preview deployments require a **separate** database and `ALLOW_PREVIEW_DATABASE=true`. Do not connect previews to production data. Local SQLite files are rejected on Vercel because its filesystem is not persistent storage.
+
+This export does not include the old site's database, passwords or secrets. A new database starts with demonstration products. Manage your catalog through `/admin`. WhatsApp checkout opens a message draft that the customer must send.
 
 ## Verification
+
 ```sh
+npm test
 npm run typecheck
-node --experimental-transform-types --test tests/admin-auth.test.mjs tests/backend.test.mjs tests/catalog.test.mjs tests/request-json.test.mjs
 npm run build
 ```
 
-## Hosting and data
-The app uses Vinext, React and Cloudflare D1. GitHub stores the source; GitHub Pages cannot run this server-backed app. Production data, passwords, runtime secrets and hosting access are not included. Database migrations and demo fixtures are included. `.openai/hosting.json` references the existing Sites deployment; copying this source does not transfer that deployment.
+Before publishing, test catalog → product → cart → WhatsApp, including quantities and totals. Verify admin sign-in and password-reset delivery separately.
 
-## Current admin recovery
-See docs/admin-recovery.md for the current reset flow and attempt limits; it supersedes the older recovery notes in BACKEND.md. Automatic email reset needs a Resend secret and a verified sender before emails can be sent.
-
-## Demo content
-Example products and the Flowers world map/reviews remain demonstration content. Image credits are in public/images/CREDITS.md.
+Example products and the Flowers world map/reviews are demonstration content. Image credits are in `public/images/CREDITS.md`.

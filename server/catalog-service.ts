@@ -1,3 +1,4 @@
+import type { SqlDatabase } from './sqlite.ts';
 import type { Product, CatalogResult } from '../lib/catalog';
 import {
   HttpError,
@@ -16,7 +17,7 @@ const product = (row: Row): Product => ({
   available: row.available === 1,
 });
 export async function listCatalog(
-  db: D1Database,
+  db: SqlDatabase,
   q: Query,
 ): Promise<CatalogResult> {
   const where = [visible];
@@ -94,7 +95,7 @@ export async function listCatalog(
     hasMore: q.page * q.limit < count,
   };
 }
-export async function productDetail(db: D1Database, id: string) {
+export async function productDetail(db: SqlDatabase, id: string) {
   const row = await db
     .prepare(
       `SELECT ${cardColumns},p.description FROM products p JOIN categories c ON c.id=p.category_id WHERE ${visible} AND p.id=?`,
@@ -104,7 +105,7 @@ export async function productDetail(db: D1Database, id: string) {
   return row ? product(row) : null;
 }
 export async function quoteSelection(
-  db: D1Database,
+  db: SqlDatabase,
   items: { id: string; quantity: number }[],
 ) {
   if (!items.length) return { items: [], total: 0, currency: 'KZT' };
@@ -141,7 +142,7 @@ export async function quoteSelection(
   };
 }
 export async function createProduct(
-  db: D1Database,
+  db: SqlDatabase,
   input: ReturnType<typeof productInput>,
 ) {
   const category = await db
@@ -178,7 +179,7 @@ export async function createProduct(
   return { id: input.id, version: 1 };
 }
 export async function updateProduct(
-  db: D1Database,
+  db: SqlDatabase,
   id: string,
   input: ReturnType<typeof productInput>,
 ) {
@@ -221,7 +222,7 @@ export async function updateProduct(
   return { id, version: input.version! + 1 };
 }
 export async function saveCategory(
-  db: D1Database,
+  db: SqlDatabase,
   input: ReturnType<typeof categoryInput>,
   id?: string,
 ) {
@@ -263,7 +264,7 @@ export async function saveCategory(
     );
   return { id, version: input.version! + 1 };
 }
-export async function adminProducts(db: D1Database, page: number) {
+export async function adminProducts(db: SqlDatabase, page: number) {
   const [rows, total] = await db.batch([
     db
       .prepare(
@@ -279,7 +280,7 @@ export async function adminProducts(db: D1Database, page: number) {
     limit: 50,
   };
 }
-export async function adminCategories(db: D1Database) {
+export async function adminCategories(db: SqlDatabase) {
   const result = await db
     .prepare(
       'SELECT id,name,active,display_order AS displayOrder,version FROM categories ORDER BY display_order,id LIMIT 200',

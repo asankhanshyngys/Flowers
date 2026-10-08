@@ -1,3 +1,4 @@
+import type { SqlDatabase } from './sqlite.ts';
 import { randomBytes } from 'node:crypto';
 import { allowedEmail, digest, hashPassword } from './admin-password.ts';
 import { HttpError } from './validation.ts';
@@ -9,7 +10,7 @@ export function recoveryEmail(value: unknown) {
   return value.trim().toLowerCase();
 }
 export async function requestReset(
-  db: D1Database, email: string, allowed: string | undefined,
+  db: SqlDatabase, email: string, allowed: string | undefined,
   send: (email: string, token: string) => Promise<void>,
 ) {
   const now = Math.floor(Date.now() / 1000);
@@ -26,7 +27,7 @@ export async function requestReset(
     console.error('Admin recovery email delivery failed');
   }
 }
-export async function resetPassword(db: D1Database, email: string, password: string, token: string, allowed?: string) {
+export async function resetPassword(db: SqlDatabase, email: string, password: string, token: string, allowed?: string) {
   const invalid = () => new HttpError(400, 'invalid_reset', 'Ссылка недействительна или истекла. Запросите новое письмо.');
   if (!/^[a-f0-9]{64}$/.test(token) || !allowedEmail(email, allowed)) throw invalid();
   const hash = await hashPassword(password);

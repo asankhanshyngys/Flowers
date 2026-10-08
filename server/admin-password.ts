@@ -1,3 +1,4 @@
+import type { SqlDatabase } from './sqlite.ts';
 import { randomBytes, scrypt, timingSafeEqual, createHash } from 'node:crypto';
 import { HttpError } from './validation.ts';
 export const sessionSeconds = 8 * 60 * 60;
@@ -59,7 +60,7 @@ export async function verifyPassword(password: string, stored: string) {
   return timingSafeEqual(await derive(password, salt), Buffer.from(key, 'hex'));
 }
 export async function limitLogin(
-  db: D1Database, ip: string, email = '', purpose = 'login',
+  db: SqlDatabase, ip: string, email = '', purpose = 'login',
 ) {
   const now = Math.floor(Date.now() / 1000);
   const recovery = purpose === 'forgot';
@@ -84,7 +85,7 @@ export async function limitLogin(
   ]);
 }
 export async function createSession(
-  db: D1Database,
+  db: SqlDatabase,
   email: string,
   version: number,
 ) {
@@ -103,7 +104,7 @@ export async function createSession(
   return token;
 }
 export async function sessionAdmin(
-  db: D1Database,
+  db: SqlDatabase,
   token: string,
   allowed?: string,
 ) {
@@ -117,7 +118,7 @@ export async function sessionAdmin(
   return account && allowedEmail(account.email, allowed) ? account.email : null;
 }
 export async function login(
-  db: D1Database,
+  db: SqlDatabase,
   email: string,
   password: string,
   allowed?: string,
@@ -140,7 +141,7 @@ export async function login(
   return createSession(db, email, account.version);
 }
 export async function activate(
-  db: D1Database,
+  db: SqlDatabase,
   email: string,
   password: string,
   token: string,

@@ -1,7 +1,8 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Miniflare } from 'miniflare';
+import { createClient } from '@libsql/client';
+import { SqlDatabase } from '../server/sqlite.ts';
 import {
   catalogQuery,
   productInput,
@@ -39,13 +40,8 @@ const input = (id, rest = {}) =>
     true,
   );
 before(async () => {
-  mf = new Miniflare({
-    modules: true,
-    script: 'export default {fetch(){return new Response("ok")}}',
-    compatibilityDate: '2026-05-15',
-    d1Databases: ['DB'],
-  });
-  db = await mf.getD1Database('DB');
+  mf = createClient({url: 'file::memory:'});
+  db = new SqlDatabase(mf);
   const sql = readFileSync(
     new URL('../drizzle/0000_lumpy_betty_brant.sql', import.meta.url),
     'utf8',
@@ -57,7 +53,7 @@ before(async () => {
     await db.prepare(statement).run();
 });
 after(async () => {
-  await mf?.dispose();
+  mf?.close();
 });
 test('empty database returns an empty catalog', async () => {
   const r = await listCatalog(db, query());

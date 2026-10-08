@@ -42,3 +42,9 @@ next-env.d.ts
 
 # local editor settings
 /.idea/
+
+# Local SQLite data
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*

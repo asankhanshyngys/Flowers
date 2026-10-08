@@ -1,7 +1,8 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Miniflare } from 'miniflare';
+import { createClient } from '@libsql/client';
+import { SqlDatabase } from '../server/sqlite.ts';
 import { requestReset, resetPassword, recoveryEmail } from '../server/admin-recovery.ts';
 import { resetMailer } from '../server/admin-email.ts';
 import {
@@ -15,20 +16,15 @@ let mf, db;
 const email = 'admin@example.test',
   password = 'a long test password for admin';
 before(async () => {
-  mf = new Miniflare({
-    modules: true,
-    script: 'export default {fetch(){return new Response("ok")}}',
-    compatibilityDate: '2026-05-15',
-    d1Databases: ['DB'],
-  });
-  db = await mf.getD1Database('DB');
+  mf = createClient({url: 'file::memory:'});
+  db = new SqlDatabase(mf);
   for (const file of ['drizzle/0002_admin_password_login.sql', 'drizzle/0005_nasty_baron_strucker.sql'])
   for (const sql of readFileSync(file, 'utf8')
     .split('--> statement-breakpoint')
     .filter((s) => s.trim()))
     await db.prepare(sql).run();
 });
-after(async () => await mf?.dispose());
+after(async () => mf?.close());
 test('activation requires a private token and an allowed admin email', async () => {
   await assert.rejects(
     activate(db, email, password, 'wrong', digest('invite'), email),

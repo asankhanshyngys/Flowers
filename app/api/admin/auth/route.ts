@@ -1,4 +1,4 @@
-import { waitUntil } from 'cloudflare:workers';
+import { after } from 'next/server';
 import { recoveryEmail, recoveryMessage, requestReset, resetPassword } from '@/server/admin-recovery';
 import { resetMailer } from '@/server/admin-email';
 import { cookies } from 'next/headers';
@@ -37,12 +37,12 @@ export async function POST(request: Request) {
       throw new HttpError(400, 'invalid_input', 'Неизвестное действие.');
     const env = bindings();
     const email = recoveryEmail('email' in body ? body.email : undefined);
-    await limitLogin(db, request.headers.get('cf-connecting-ip') || 'unknown', email,
+    await limitLogin(db, process.env.VERCEL === '1' ? (request.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() || 'unknown') : 'local', email,
       body.action === 'forgot' ? 'forgot' : body.action === 'reset' ? 'reset' : 'login');
     if (body.action === 'forgot') {
       const send = resetMailer(env);
       // Account lookup and delivery run after the same generic response for all emails.
-      waitUntil(requestReset(db, email, env.ADMIN_EMAILS, send).catch(() => {
+      after(() => requestReset(db, email, env.ADMIN_EMAILS, send).catch(() => {
         console.error('Admin recovery request failed');
       }));
       return { ok: true, message: recoveryMessage };
