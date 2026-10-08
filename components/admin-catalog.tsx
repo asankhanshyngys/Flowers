@@ -1,5 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Camera, Pencil, Plus, X } from 'lucide-react';
+import { preparePhoto } from '@/lib/prepare-photo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +62,27 @@ export default function AdminCatalog() {
   const [editing, setEditing] = useState<RecordProduct | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const locked = busy || uploading;
+  function rememberFocus() {
+    returnFocus.current = document.activeElement as HTMLElement;
+    setUploadError('');
+  }
+  async function uploadPhoto(file: File) {
+    setUploading(true);
+    setUploadError('');
+    try {
+      const photo = await preparePhoto(file);
+      const response = await fetch('/api/admin/images', {method: 'POST', headers: {'Content-Type': 'image/webp'}, body: photo, signal: AbortSignal.timeout(60000)});
+      const data = await apiJson(response);
+      if (!response.ok) throw new Error(apiError(data, 'Не удалось загрузить фото. Попробуйте снова.'));
+      setEditing(current => current ? {...current, image: (data as {url: string}).url} : current);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Не удалось загрузить фото.');
+    } finally { setUploading(false); }
+  }
   const [message, setMessage] = useState('');
   async function request(path: string, method: string, body: unknown) {
     setBusy(true);
@@ -96,6 +120,7 @@ export default function AdminCatalog() {
         </div>
         <Button
           onClick={() => {
+            rememberFocus();
             setEditing({
               ...blank,
               categoryId: categories.data?.categories[0]?.id || '',
@@ -104,11 +129,12 @@ export default function AdminCatalog() {
             setMessage('');
           }}
         >
-          Новый товар
+          <Plus aria-hidden="true" /> Новый товар
         </Button>
         <Button
           variant="outline"
           onClick={() => {
+            rememberFocus();
             setCategory({
               id: '',
               name: '',
@@ -127,7 +153,7 @@ export default function AdminCatalog() {
         Цены указаны в тенге. Черновики и архивные товары скрыты. Отключение
         категории скрывает её товары.
       </p>
-      {message && <output className="admin-message">{message}</output>}
+      {message && !editing && !category && <output className="admin-message">{message}</output>}
       {(products.error || categories.error) && (
         <div role="alert">
           <p>{products.error || categories.error}</p>
@@ -141,11 +167,24 @@ export default function AdminCatalog() {
           </Button>
         </div>
       )}
+      <Dialog open={!!editing || !!category} onOpenChange={(open) => {
+        if (!open && !locked) { setEditing(null); setCategory(null); }
+      }}>
+      {(editing || category) && <DialogContent className="admin-editor" showCloseButton={false} finalFocus={returnFocus}>
+        <div className="admin-editor-heading">
+          <div>
+            <DialogTitle>{editing ? (editing.version ? 'Редактировать товар' : 'Новый товар') : (category?.version ? 'Редактировать категорию' : 'Новая категория')}</DialogTitle>
+            <DialogDescription>Внесите изменения и нажмите «Сохранить».</DialogDescription>
+          </div>
+          <Button type="button" variant="ghost" disabled={locked} aria-label="Закрыть редактор" onClick={() => {setEditing(null); setCategory(null);}}><X aria-hidden="true" /></Button>
+        </div>
+        {message && <div role="alert" className="admin-message">{message}</div>}
       {editing && (
         <form
           className="admin-form"
           onSubmit={(e) => {
             e.preventDefault();
+            if (locked) return;
             const { version, id, ...rest } = editing;
             void request(
               `/api/admin/products${version ? '/' + id : ''}`,
@@ -158,7 +197,24 @@ export default function AdminCatalog() {
             );
           }}
         >
-          <h2>{editing.version ? 'Редактировать товар' : 'Новый товар'}</h2>
+          <div className="admin-photo-field">
+            <div className="admin-photo-preview">
+              {editing.image ? <img src={editing.image} alt="Фото товара" /> : <Camera aria-hidden="true" />}
+            </div>
+            <div>
+              <label className="admin-upload-button" aria-disabled={locked}>
+                <Camera aria-hidden="true" /> {uploading ? 'Загружаем фото…' : 'Загрузить фото'}
+                <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={locked} onChange={e => {
+                  const file = e.currentTarget.files?.[0];
+                  e.currentTarget.value = '';
+                  if (file) void uploadPhoto(file);
+                }} />
+              </label>
+              <p className="admin-photo-help">С телефона или компьютера · JPG, PNG, WebP до 20 МБ</p>
+              <p role="status">{uploading ? 'Подготавливаем и сохраняем фото…' : ''}</p>
+              {uploadError && <p role="alert" className="admin-upload-error">{uploadError}</p>}
+            </div>
+          </div>
           <label htmlFor="admin-field-0">
             Идентификатор для ссылки
             <Input
@@ -232,21 +288,13 @@ export default function AdminCatalog() {
               }
             />
           </label>
-          <label htmlFor="admin-field-5">
-            Путь к фото или общедоступный HTTPS-адрес
-            <Input
-              id="admin-field-5"
-              maxLength={2048}
-              value={editing.image}
-              onChange={(e) =>
-                setEditing({ ...editing, image: e.target.value })
-              }
-            />
-            <small>
-              Необязательно. Доступные фото: /images/roses.jpg,
-              /images/white.jpg, /images/tulips.jpg, /images/mixed.jpg
-            </small>
-          </label>
+          <details className="admin-image-link">
+            <summary>Или использовать ссылку на фото</summary>
+            <label htmlFor="admin-field-5">Ссылка на фото
+              <Input id="admin-field-5" maxLength={2048} disabled={locked} value={editing.image}
+                onChange={e => setEditing({...editing, image: e.target.value})} />
+            </label>
+          </details>
           <label htmlFor="admin-field-6">
             Описание
             <Textarea
@@ -305,13 +353,13 @@ export default function AdminCatalog() {
             Доступен для подбора
           </div>
           <div className="admin-actions">
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={locked}>
               {busy ? 'Сохраняем…' : 'Сохранить товар'}
             </Button>
             <Button
               variant="outline"
               type="button"
-              disabled={busy}
+              disabled={locked}
               onClick={() => setEditing(null)}
             >
               Отмена
@@ -324,6 +372,7 @@ export default function AdminCatalog() {
           className="admin-form"
           onSubmit={(e) => {
             e.preventDefault();
+            if (locked) return;
             const { version, id, ...rest } = category;
             void request(
               `/api/admin/categories${version ? '/' + id : ''}`,
@@ -336,9 +385,7 @@ export default function AdminCatalog() {
             );
           }}
         >
-          <h2>
-            {category.version ? 'Редактировать категорию' : 'Новая категория'}
-          </h2>
+
           <label htmlFor="admin-field-9">
             Идентификатор
             <Input
@@ -390,12 +437,13 @@ export default function AdminCatalog() {
             Категория активна
           </div>
           <div className="admin-actions">
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={locked}>
               Сохранить категорию
             </Button>
             <Button
               type="button"
               variant="outline"
+              disabled={locked}
               onClick={() => setCategory(null)}
             >
               Отмена
@@ -403,6 +451,8 @@ export default function AdminCatalog() {
           </div>
         </form>
       )}
+      </DialogContent>}
+      </Dialog>
       <section className="admin-section">
         <h2>Товары ({products.data?.total || 0})</h2>
         {products.loading && <output>Загрузка товаров…</output>}
@@ -411,11 +461,11 @@ export default function AdminCatalog() {
         )}
         <div className="admin-list">
           {products.data?.products.map((p) => (
-            <div className="admin-row" key={p.id}>
-              <div>
+            <div className="admin-row admin-product-row" key={p.id}>
+              <div className="admin-product-thumb">{p.image ? <img src={p.image} alt="" loading="lazy" /> : <Camera aria-hidden="true" />}</div>
+              <div className="admin-product-copy">
                 <strong>{p.name}</strong>
                 <p>
-                  {p.id} ·{' '}
                   {
                     {
                       draft: 'Черновик',
@@ -426,16 +476,18 @@ export default function AdminCatalog() {
                   · {p.available ? 'в наличии' : 'нет в наличии'}
                 </p>
               </div>
-              <span>{money(p.price)}</span>
+              <span className="admin-product-price">{money(p.price)}</span>
               <Button
                 variant="outline"
+                aria-label={`Изменить ${p.name}`}
                 onClick={() => {
+                  rememberFocus();
                   setEditing(p);
                   setCategory(null);
                   setMessage('');
                 }}
               >
-                Изменить {p.name}
+                <Pencil aria-hidden="true" /> Изменить
               </Button>
             </div>
           ))}
@@ -464,13 +516,15 @@ export default function AdminCatalog() {
             </span>
             <Button
               variant="outline"
+              aria-label={`Изменить ${c.name}`}
               onClick={() => {
+                rememberFocus();
                 setCategory(c);
                 setEditing(null);
                 setMessage('');
               }}
             >
-              Изменить {c.name}
+              <Pencil aria-hidden="true" /> Изменить
             </Button>
           </div>
         ))}

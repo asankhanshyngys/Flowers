@@ -20,7 +20,8 @@ Migrations include demo bouquets. Never commit environment files, database files
 3. Add production variables `ADMIN_EMAILS` (your admin email) and `SITE_ORIGIN` (the exact HTTPS site address, without a trailing slash).
 4. Run `node scripts/admin-invite.mjs https://YOUR-SITE.vercel.app`. Add its hash as `ADMIN_SETUP_TOKEN_HASH` in Vercel. Keep the activation link private.
 5. Deploy. Migrations run before the Next.js build. Open the private link to create your admin password.
-6. For automatic password-reset emails, add `RESEND_API_KEY` and a verified sender in `ADMIN_EMAIL_FROM`, redeploy and verify inbox delivery. See [recovery instructions](docs/admin-recovery.md).
+6. Connect a public Vercel Blob store to production to enable device photo uploads. This adds `BLOB_READ_WRITE_TOKEN`. Admin uploads accept JPG, PNG and WebP up to 20 MB and resize before transfer.
+7. For automatic password-reset emails, add `RESEND_API_KEY` and a verified sender in `ADMIN_EMAIL_FROM`, redeploy and verify inbox delivery. See [recovery instructions](docs/admin-recovery.md).
 
 Once Vercel has GitHub repository access, pushes to the production branch trigger deployments. You can also redeploy through the Vercel dashboard. Environment changes require a new deployment.
 
