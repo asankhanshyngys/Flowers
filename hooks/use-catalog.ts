@@ -1,10 +1,11 @@
 'use client';
 import { apiError } from '@/lib/api-error';
 import { requestJson } from '@/lib/request-json';
-import { useState, useSyncExternalStore, useRef } from 'react';
+import { useState, useSyncExternalStore, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { readFilters, type Product } from '@/lib/catalog';
 import { useResource } from './use-resource';
+import { cartPreview, matchingQuote } from '@/lib/cart-preview';
 const listeners = new Set<() => void>();
 let memory = '{}';
 let storageFailed = false;
@@ -59,6 +60,14 @@ export type Quote = {
   total: number;
   currency: string;
 };
+let confirmed: {quote: Quote; at: number} | null = null;
+function rememberQuote(quote: Quote) {
+  confirmed = {quote, at: Date.now()};
+  try { localStorage.setItem('petal-cart-preview', JSON.stringify(quote)); } catch { /* Device storage is optional. */ }
+}
+function storedPreview(): unknown {
+  try { return JSON.parse(localStorage.getItem('petal-cart-preview') || 'null'); } catch { return null; }
+}
 export function useSelection() {
   const raw = useSyncExternalStore(subscribe, snapshot, () => '{}');
   const bag = parse(raw);
@@ -69,12 +78,21 @@ export function useSelection() {
     delta: number;
   } | null>(null);
   const mutating = useRef(false);
-  const quote = useResource<Quote>(
+  const resource = useResource<Quote>(
     Object.keys(bag).length ? '/api/selection' : null,
     JSON.stringify({
       items: Object.entries(bag).map(([id, quantity]) => ({ id, quantity })),
     }),
   );
+  useEffect(() => {
+    if (resource.data) rememberQuote(resource.data);
+  }, [resource.data]);
+  // Only an in-memory, recent server response can enable checkout. Device
+  // snapshots are presentation-only and never trusted for ordering.
+  const recent = confirmed && Date.now() - confirmed.at < 30_000 && matchingQuote(bag, confirmed.quote)
+    ? confirmed.quote : null;
+  const quote = {...resource, data: resource.data || (resource.loading && !resource.error ? recent : null)};
+  const preview = cartPreview(bag, quote.data || resource.previousData || (typeof window !== 'undefined' ? storedPreview() : null));
   async function quantity(id: string, delta: number) {
     if (mutating.current) return;
     const next = parse(snapshot());
@@ -106,6 +124,7 @@ export function useSelection() {
       });
       if (!response.ok)
         throw new Error(apiError(result, 'Не удалось обновить корзину.'));
+      rememberQuote(result as Quote);
       save(next);
       setNotice('');
       setFailedMutation(null);
@@ -129,6 +148,7 @@ export function useSelection() {
         : ''),
     pending,
     quote,
+    preview,
     retryMutation: failedMutation
       ? () => quantity(failedMutation.id, failedMutation.delta)
       : undefined,

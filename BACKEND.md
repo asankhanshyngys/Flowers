@@ -4,7 +4,7 @@ The Next.js app uses Turso/libSQL through `server/sqlite.ts`. Queries use bound 
 
 Public endpoints: GET `/api/catalog`, `/api/categories`, `/api/products/:id`. Lists exclude draft/archived products and inactive categories. Limits default to 24 and cap at 60. Unavailable products remain browseable but cannot be ordered.
 
-POST `/api/selection` accepts `{items:[{id,quantity}]}`, with at most 50 unique items and quantities 1–20. It returns an authoritative quote without storing orders or reserving stock. Browser storage contains only product IDs and quantities. Quote failures hide the subtotal and offer retry. WhatsApp opens a draft for the customer to send.
+POST `/api/selection` accepts `{items:[{id,quantity}]}`, with at most 50 unique items and quantities 1–20. It returns an authoritative quote without storing orders or reserving stock. Browser storage contains cart IDs/quantities and a display-only snapshot of product details. Cached details keep items visible during refreshes; they never authorize checkout. Only a current response or a matching in-memory server quote under 30 seconds old enables checkout. Quote failures hide the subtotal and offer retry. WhatsApp opens a draft for the customer to send.
 
 Prices use integer tiyn (100 = 1 tenge); admin inputs and URL filters use tenge. Migration 0001 contains the historical one-time currency conversion. Never manually rerun or modify applied migrations.
 
