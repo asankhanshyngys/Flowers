@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788773247241,
+      "tag": "0000_lumpy_betty_brant",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788784766180,
+      "tag": "0001_russian_tenge",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788803137981,
+      "tag": "0002_admin_password_login",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788869636497,
+      "tag": "0003_example_bouquets",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789636234148,
+      "tag": "0004_enable_cart_examples",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791490565518,
+      "tag": "0005_nasty_baron_strucker",
+      "breakpoints": true
+    }
+  ]
+}
