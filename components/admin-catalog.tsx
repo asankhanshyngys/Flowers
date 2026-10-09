@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import AdminLocations from './admin-locations';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Camera, Pencil, Plus, X } from 'lucide-react';
 import { preparePhoto } from '@/lib/prepare-photo';
@@ -529,6 +530,7 @@ export default function AdminCatalog() {
           </div>
         ))}
       </section>
+      <AdminLocations />
     </main>
   );
 }

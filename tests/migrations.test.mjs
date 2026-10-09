@@ -10,7 +10,7 @@ test('all migrations create demo catalog and auth tables; rerun preserves prices
     await applyMigrations(client);
     const before = await client.execute('SELECT id,price FROM products ORDER BY id');
     assert.equal(before.rows.length,4);
-    assert.equal((await client.execute('SELECT count(*) AS n FROM __flowers_migrations')).rows[0].n,6);
+    assert.equal((await client.execute('SELECT count(*) AS n FROM __flowers_migrations')).rows[0].n,7);
     await client.execute("UPDATE products SET price=12345,version=version+1 WHERE id='garden-party'");
     await applyMigrations(client);
     assert.equal((await client.execute("SELECT price FROM products WHERE id='garden-party'")).rows[0].price,12345);
