@@ -50,6 +50,13 @@
       "when": 1791503239348,
       "tag": "0006_giant_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791521911241,
+      "tag": "0007_serious_sersi",
+      "breakpoints": true
     }
   ]
 }

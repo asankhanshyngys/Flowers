@@ -98,6 +98,7 @@ export const storeLocations = sqliteTable('store_locations', {
   phone: text('phone').notNull().default(''),
   hours: text('hours').notNull().default(''),
   mapUrl: text('map_url').notNull().default(''),
+  coordinates: text('coordinates').notNull().default(''),
   active: integer('active').notNull().default(1),
   displayOrder: integer('display_order').notNull().default(0),
   version: integer('version').notNull().default(1),

@@ -7,7 +7,7 @@ import type {StoreLocation} from '@/lib/locations';
 import {Button} from './ui/button';
 import {Input} from './ui/input';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from './ui/dialog';
-const blank:StoreLocation={id:'',name:'',address:'',phone:'',hours:'',mapUrl:'',active:1,displayOrder:0,version:0};
+const blank:StoreLocation={id:'',name:'',address:'',phone:'',hours:'',mapUrl:'',coordinates:'',active:1,displayOrder:0,version:0};
 export default function AdminLocations(){
  const resource=useResource<{locations:StoreLocation[]}>('/api/admin/locations');
  const [editing,setEditing]=useState<StoreLocation|null>(null);
@@ -32,7 +32,7 @@ export default function AdminLocations(){
       const data=await apiJson(response);if(!response.ok)throw new Error(apiError(data,'Не удалось сохранить адрес.'));
       setEditing(null);setMessage('Адрес сохранён.');resource.retry();
     }catch(error){setMessage(error instanceof Error?error.message:'Не удалось сохранить адрес.');}finally{setBusy(false);}}}>
-     {([['name','Название магазина',120,true],['address','Адрес',300,true],['phone','Телефон',40,false],['hours','Часы работы',160,false],['mapUrl','Ссылка на 2ГИС',2048,false]] as const).map(([key,label,max,required])=><label key={key} htmlFor={`location-${key}`}>{label}<Input id={`location-${key}`} type={key==='mapUrl'?'url':key==='phone'?'tel':'text'} required={required} maxLength={max} disabled={busy} value={editing[key]} onChange={e=>setEditing({...editing,[key]:e.target.value})}/>{key==='mapUrl'&&<small>Для встроенной карты вставьте полную ссылку из браузера: https://2gis.kz/город/firm/номер.</small>}</label>)}
+     {([['name','Название магазина',120,true],['address','Адрес',300,true],['phone','Телефон',40,false],['hours','Часы работы',160,false],['mapUrl','Ссылка на 2ГИС',2048,false],['coordinates','Координаты метки',80,false]] as const).map(([key,label,max,required])=><label key={key} htmlFor={`location-${key}`}>{label}<Input id={`location-${key}`} type={key==='mapUrl'?'url':key==='phone'?'tel':'text'} required={required} maxLength={max} disabled={busy} value={editing[key]} onChange={e=>setEditing({...editing,[key]:e.target.value})}/>{key==='coordinates'&&<small>Широта, долгота. Например: 51.14245, 71.420112. Скопируйте координаты точки из карты.</small>}{key==='mapUrl'&&<small>Ссылка для открытия маршрута в 2ГИС.</small>}</label>)}
      <label htmlFor="location-order">Порядок показа<Input id="location-order" type="number" min={0} max={1000000} step={1} required disabled={busy} value={editing.displayOrder} onChange={e=>setEditing({...editing,displayOrder:e.target.valueAsNumber})}/><small>Меньшее число — раньше в списке.</small></label>
      <label className="check-label"><input type="checkbox" checked={!!editing.active} disabled={busy} onChange={e=>setEditing({...editing,active:Number(e.target.checked)})}/>Показывать на сайте</label>
      {message && <p role="alert" className="location-form-message">{message}</p>}
