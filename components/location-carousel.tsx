@@ -4,6 +4,7 @@ import {MapPin,Phone,Clock,ArrowUpRight,ChevronLeft,ChevronRight} from 'lucide-r
 import {useResource} from '@/hooks/use-resource';
 import type {StoreLocation} from '@/lib/locations';
 import {Button} from './ui/button';
+import {locationMapUrl} from '@/lib/location-map';
 export default function LocationCarousel(){
  const {data,previousData,error,loading,retry}=useResource<{locations:StoreLocation[]}>('/api/locations');
  const viewport=useRef<HTMLDivElement>(null);
@@ -22,6 +23,7 @@ export default function LocationCarousel(){
   {error && <div role="alert"><p>Не удалось загрузить адреса.</p><Button variant="outline" onClick={retry}>Повторить</Button></div>}
   <div ref={viewport} className="location-viewport" role="region" aria-label="Адреса магазинов" aria-roledescription={locations.length>1?'карусель':undefined} onScroll={e=>setIndex(Math.round(e.currentTarget.scrollLeft/e.currentTarget.clientWidth))}>
    {locations.map((location,i)=><article className="location-slide" key={location.id} aria-label={`${i+1} из ${locations.length}`} inert={locations.length>1 && current!==i}>
+    {locationMapUrl(location.mapUrl) && <div className="location-map-frame"><iframe src={locationMapUrl(location.mapUrl)!} title={`Карта 2ГИС: ${location.name}, ${location.address}`} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /></div>}
     <div className="location-card"><div className="location-icon"><MapPin aria-hidden="true"/></div><div className="location-copy"><h3>{location.name}</h3><p>{location.address}</p>
       <div className="location-meta">{location.hours && <span><Clock size={16} aria-hidden="true"/>{location.hours}</span>}{location.phone && <a href={`tel:${location.phone.replace(/[^+0-9]/g,'')}`}><Phone size={16} aria-hidden="true"/>{location.phone}</a>}</div>
       {location.mapUrl && <a className="location-map-link" href={location.mapUrl} target="_blank" rel="noopener noreferrer">Открыть в 2ГИС <ArrowUpRight size={16} aria-hidden="true"/></a>}
